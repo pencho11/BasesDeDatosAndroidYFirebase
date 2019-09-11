@@ -5,9 +5,12 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextSwitcher;
 import android.widget.Toast;
 
 import com.example.ejemploautenticacionfirebaseyandroid.modelo.Usuario;
@@ -28,6 +31,9 @@ public class RegistroActivity extends AppCompatActivity {
     private EditText usuario;
     private EditText clave;
     private EditText confirmarClave;
+    private EditText numDocumento;
+    private EditText nombreCompleto;
+    private EditText edad;
     private Button guardar;
     private Button volver;
     private FirebaseAuth firebaseAuth;
@@ -40,6 +46,9 @@ public class RegistroActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_registro);
 
+        nombreCompleto = findViewById(R.id.txtNombre);
+        numDocumento = findViewById(R.id.txtDocumento);
+        edad = findViewById(R.id.txtEdad);
 
         usuario = findViewById(R.id.txtUsuario);
         clave = findViewById(R.id.txtClave);
@@ -52,6 +61,14 @@ public class RegistroActivity extends AppCompatActivity {
 
         inicializarFirebase();
 
+
+        numDocumento.addTextChangedListener(validarCampo);
+        nombreCompleto.addTextChangedListener(validarCampo);
+        edad.addTextChangedListener(validarCampo);
+        usuario.addTextChangedListener(validarCampo);
+        clave.addTextChangedListener(validarCampo);
+        confirmarClave.addTextChangedListener(validarCampo);
+
         volver.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -62,6 +79,10 @@ public class RegistroActivity extends AppCompatActivity {
         guardar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                String valorDocumento = numDocumento.getText().toString().trim();
+                String valorNombre = nombreCompleto.getText().toString().trim();
+                String valorEdad = edad.getText().toString().trim();
+
                 String user = usuario.getText().toString().trim();
                 String pass = clave.getText().toString().trim();
                 String pass2 = confirmarClave.getText().toString().trim();
@@ -70,6 +91,11 @@ public class RegistroActivity extends AppCompatActivity {
                     Usuario usuario = new Usuario();
                     usuario.setEmail(user);
                     usuario.setClave(pass);
+                    usuario.setNumeroDocumento(valorDocumento);
+                    usuario.setEdad(valorEdad);
+                    usuario.setNombre(valorNombre);
+
+                    databaseReference.child("Usuario").child(usuario.getNumeroDocumento()).setValue(usuario);
 
                     firebaseAuth.createUserWithEmailAndPassword(usuario.getEmail(),
                             usuario.getClave()).addOnCompleteListener(RegistroActivity.this, new OnCompleteListener<AuthResult>() {
@@ -85,7 +111,7 @@ public class RegistroActivity extends AppCompatActivity {
                         }
                     });
                 }else{
-                    Toast.makeText(RegistroActivity.this,"Las coontraseñas no coinciden.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(RegistroActivity.this,"Las cootraseñas no coinciden.", Toast.LENGTH_LONG).show();
 
                 }
 
@@ -97,13 +123,48 @@ public class RegistroActivity extends AppCompatActivity {
     }
 
 
-
     private void inicializarFirebase(){
         FirebaseApp.initializeApp(this);
         firebaseDatabase = FirebaseDatabase.getInstance();
         databaseReference = firebaseDatabase.getReference();
     }
 
+    private TextWatcher validarCampo = new TextWatcher() {
+        @Override
+        public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            //Hello
+        }
 
+        @Override
+        public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            final String regex = "(?:[^<>()\\[\\].,;:\\s@\"]+(?:\\.[^<>()\\[\\].,;:\\s@\"]+)*|\"[^\\n\"]+\")@(?:[^<>()\\[\\].,;:\\s@\"]+\\.)+[^<>()\\[\\]\\.,;:\\s@\"]{2,63}";
+            String valorDocumento = numDocumento.getText().toString().trim();
+            String valorNombre = nombreCompleto.getText().toString().trim();
+            String valorEdad = edad.getText().toString().trim();
+
+            String user = usuario.getText().toString().trim();
+            String pass = clave.getText().toString().trim();
+            String pass2 = confirmarClave.getText().toString().trim();
+
+            guardar.setEnabled(
+                    !valorDocumento.isEmpty()&&
+                    !valorNombre.isEmpty()&&
+                    !valorEdad.isEmpty()&&
+                    !user.isEmpty()&&
+                    !pass.isEmpty()&&
+                    !pass2.isEmpty()&&
+                    user.matches(regex)&&
+                    pass.length() > 5 &&
+                    pass2.length() > 5 &&
+                    pass.equals(pass2)&&
+                    valorDocumento.length() > 5
+            );
+        }
+
+        @Override
+        public void afterTextChanged(Editable editable) {
+            //Hello
+        }
+    };
 
 }
